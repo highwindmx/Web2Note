@@ -5,17 +5,18 @@ from datetime import datetime
 import pathlib
 
 from PyQt5.QtCore import (pyqtSignal, Qt, QUrl, QSize, QPoint, QThread, QEventLoop, QFileInfo, QRect, QDate)
-from PyQt5.QtGui import (QIcon, QCursor, QColor, QFont, QDesktopServices) # QPainter,
+from PyQt5.QtGui import (QIcon, QCursor, QColor, QFont, QDesktopServices,QStandardItemModel) # QPainter,
 from PyQt5.QtWidgets import (qApp, QMainWindow, QWidget
                             ,QListWidget, QListWidgetItem, QTabWidget, QCalendarWidget
                             ,QLabel, QLineEdit, QPlainTextEdit, QTextBrowser, QProgressBar, QProgressDialog
-                            ,QButtonGroup, QPushButton, QRadioButton, QCheckBox 
+                            ,QButtonGroup, QPushButton, QRadioButton, QCheckBox, QComboBox
                             ,QMenu, QFileDialog, QMessageBox, QAction, QFileIconProvider
                             ,QLayout, QGridLayout, QSplitter, QListView
                             ,QSizePolicy,  # QDesktopWidget, QApplication, 
                             )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from .db import (NoteIndex, NotePack)
+from .analyzeDialog import Analysis
 
 class MainWindow(QMainWindow):
     onHtmlGot = pyqtSignal() # 不要动它，答案见：https://stackoverflow.com/questions/48386253/save-html-files-in-qwebengineview-browser
@@ -35,18 +36,23 @@ class MainWindow(QMainWindow):
         
     def initUI(self): # 加载UI
         # 菜单栏
-        self.menu_Bar = self.menuBar() # 这里不能用 = QMenuBar(self)
-        self.menu_Bar_File = self.menu_Bar.addMenu('&File')
-        self.menu_Bar_Reload = self.menu_Bar.addMenu('&Reload')
-        menu_Bar_File_Exit_AC = QAction(QIcon("logo3.png"), '&Exit', self)
+        self.menu_Bar = self.menuBar()
+        self.menu_Bar_File = self.menu_Bar.addMenu('程序')
+        menu_Bar_File_Exit_AC = QAction(QIcon("./style/logo3.png"), '退出', self)
         # menu_Bar_File_Exit_AC.setShortcut('Ctrl+Q')
-        menu_Bar_File_Import_AC = QAction(QIcon("logo3.png"), '&导入笔记目录', self) # 这个&是干啥用的？？？？？？
-        menu_Bar_Reload_All_AC = QAction(QIcon("logo3.png"), '&Reload all', self)
-        menu_Bar_Reload_New_AC = QAction(QIcon("logo3.png"), '&Reload new', self)
         self.menu_Bar_File.addAction(menu_Bar_File_Exit_AC)
-        self.menu_Bar_File.addAction(menu_Bar_File_Import_AC)
+        
+        self.menu_Bar_Reload = self.menu_Bar.addMenu('重载')
+        menu_Bar_Reload_Import_AC = QAction(QIcon("./style/logo3.png"), '&导入笔记目录', self) # 这个&是干啥用的？？？？？？
+        menu_Bar_Reload_All_AC = QAction(QIcon("./style/logo3.png"), '重载所有的笔记', self)
+        menu_Bar_Reload_New_AC = QAction(QIcon("./style/logo3.png"), '重载更新的笔记', self)
+        self.menu_Bar_Reload.addAction(menu_Bar_Reload_Import_AC)
         self.menu_Bar_Reload.addAction(menu_Bar_Reload_All_AC)
         self.menu_Bar_Reload.addAction(menu_Bar_Reload_New_AC)
+        
+        self.menu_Bar_Analyze = self.menu_Bar.addMenu('分析')
+        menu_Bar_Analyze_Stt_AC = QAction(QIcon("./style/logo3.png"), '统计', self)
+        self.menu_Bar_Analyze.addAction(menu_Bar_Analyze_Stt_AC)
 
     # 主窗体
         central_QW = QWidget(self)
@@ -213,8 +219,40 @@ class MainWindow(QMainWindow):
         self.note_Keyword_LB.setStyleSheet("font:12pt;") # italic 
         self.layoutMidTopGrid.addWidget(self.note_Keyword_LB, 1,0, 1,1)
 
+        class CheckableComboBox(QComboBox):
+            def __init__(self, mainwin):
+                super().__init__()
+                self.main_Win = mainwin
+                self.view().pressed.connect(self.handleItemPressed)
+                self.setModel(QStandardItemModel(self))
+                
+            def handleItemPressed(self, index):
+                item = self.model().itemFromIndex(index)
+                if item.checkState() == Qt.Checked:
+                    item.setCheckState(Qt.Unchecked)
+                    kwl = self.getCheckedItem()
+                    self.main_Win.note_Keyword_LE.setText(";".join(kwl))
+                else:
+                    item.setCheckState(Qt.Checked)
+                    kwl = self.getCheckedItem()
+                    self.main_Win.note_Keyword_LE.setText(";".join(kwl))
+                    
+            def getCheckedItem(self):
+                checked_items = []
+                for index in range(self.count()):
+                    item = self.model().item(index)
+                    if item.checkState() == Qt.Checked:
+                        checked_items.append(item.text())
+                return checked_items
+
         self.note_Keyword_LE = QLineEdit(self)
-        self.layoutMidTopGrid.addWidget(self.note_Keyword_LE, 1,1, 1,9)
+        self.note_Keyword_CB = CheckableComboBox(self)
+        #self.note_Keyword_PB.setStyleSheet("QPushButton { text-align: left; }")
+        #self.note_Keyword_MN = QMenu()
+        #self.note_Keyword_MN.setMaximumSize(100,100)
+        #self.note_Keyword_PB.setMenu(self.note_Keyword_MN)
+        self.layoutMidTopGrid.addWidget(self.note_Keyword_LE, 1,1, 1,6)
+        self.layoutMidTopGrid.addWidget(self.note_Keyword_CB, 1,7, 1,3)
 
         self.left_Panel_Show_Hide_BT = QPushButton('>收>',self)
         self.left_Panel_Show_Hide_BT.setFlat(True)
@@ -379,9 +417,9 @@ class MainWindow(QMainWindow):
         # 加入附件栏
         class DragDropList(QListWidget):
             droppedSignal = pyqtSignal([list])
-            def __init__(self, mainWin, parent=None):
+            def __init__(self, mainwin, parent=None):
                 super(DragDropList, self).__init__(parent)
-                self.main_Win = mainWin
+                self.main_Win = mainwin
                 self.setContextMenuPolicy(Qt.CustomContextMenu)
                 self.customContextMenuRequested.connect(self.atmListContextMenu)
                 #self.itemClicked.connect(self.main_Win.?????)
@@ -476,10 +514,11 @@ class MainWindow(QMainWindow):
         self.status_Bar.showMessage('准备就绪') 
         
     # 信号关联
-        menu_Bar_File_Import_AC.triggered.connect(self.importNoteFolder)
-        menu_Bar_File_Exit_AC.triggered.connect(qApp.quit)        
+        menu_Bar_File_Exit_AC.triggered.connect(qApp.quit) 
+        menu_Bar_Reload_Import_AC.triggered.connect(self.importNoteFolder)
         menu_Bar_Reload_All_AC.triggered.connect(self.click2Reload)     
-        menu_Bar_Reload_New_AC.triggered.connect(self.reloadNew)
+        menu_Bar_Reload_New_AC.triggered.connect(self.click2ReloadNew)
+        menu_Bar_Analyze_Stt_AC.triggered.connect(self.click2Analyze)
 
         # self.search_And_RBT.toggled.connect(self.searchAndOrState)
         # self.search_Or_RBT.toggled.connect(self.searchAndOrState)
@@ -515,8 +554,9 @@ class MainWindow(QMainWindow):
         #
         self.note_Attachment_QW.droppedSignal.connect(self.addAttachment)
         self.note_Calendar_QW.clicked.connect(self.click2SearchDate)
-        self.refreshNoteList() # 也算是一种初始化。。。不过必须放在函数包含的各种widget加入之后哦
-   
+        self.refreshNotesList() # 也算是一种初始化。。。不过必须放在函数包含的各种widget加入之后哦
+        self.refreshKeywordsList()
+        
     # 功能函数 
     def setDataDirList(self, lst):
         self.note_index_dir = lst[0] # 数据库
@@ -945,20 +985,25 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("破电脑，怂的一匹")
         else:
             return
+            
+    def click2ReloadNew(self):
+        self.reloadNew()
 
     def reloadAll(self):
         self.note_index.archive()
-        self.note_index = TBIndex(self.database, "Note", self.note_col, self.note_root_dir)
+        self.note_index = NoteIndex(self.note_index_dir, "Note", self.note_col, self.note_root_dir)
         self.note_index.create()
         self.walkDir()     
-        self.refreshNoteList()
+        self.refreshNotesList()
+        self.refreshKeywordsList()
         self.note_Calendar_QW.genCell(self.note_index.getAllDate())
 
     def reloadNew(self):
-        self.note_index = TBIndex(self.database, "Note", self.note_col, self.note_root_dir)
+        self.note_index = NoteIndex(self.note_index_dir, "Note", self.note_col, self.note_root_dir)
         self.note_index.create()
         self.walkDir(1)
-        self.refreshNoteList()
+        self.refreshNotesList()
+        self.refreshKeywordsList()
         self.note_Calendar_QW.genCell(self.note_index.getAllDate())
 
     def sortNote(self, flag):
@@ -974,9 +1019,9 @@ class MainWindow(QMainWindow):
             self.note_index.data.sort_values(by="ext", inplace=True)
         else:
             pass
-        self.refreshNoteList()
+        self.refreshNotesList()
 
-    def refreshNoteList(self):
+    def refreshNotesList(self):
         try:
             qw_dict = {"Draft":self.note_List_Tab_Draft_QW
                       ,"Archive":self.note_List_Tab_Archive_QW
@@ -999,6 +1044,37 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print("加载出错:",e)
 
+    def refreshKeywordsList(self):
+        if self.note_index.data.empty:
+            pass
+        else:
+            tb = self.note_index.data["keywords"].sort_values().unique().copy()
+            for index,kw in enumerate(tb):
+                self.note_Keyword_CB.addItem(kw)
+                item = self.note_Keyword_CB.model().item(index, 0) # 大致意思应该是获取刚刚那个item
+                item.setCheckState(False)
+                
+                
+                # self.note_Keyword_AC[kw] = QAction(kw, self.note_Keyword_MN)
+                # self.note_Keyword_AC[kw].setCheckable(True)
+                # # self.note_Keyword_AC[kw].triggered.connect(lambda: self.updateKeywords(item))
+                # self.note_Keyword_AC[kw].triggered.connect(lambda: self.updateKeywords(self.note_Keyword_AC[kw],kw))
+                # .addAction(self.note_Keyword_AC[kw])
+    
+    # def updateKeywords(self, item, kw):
+    #     # print(self, item, kw)
+    #     if self.first_item:
+    #         pass
+    #     else:
+    #         if item.isChecked():
+    #             kwl = self.note_Keyword_PB.text().split(";")
+    #             kwl.append(kw)
+    #             self.note_Keyword_PB.setText(";".join(kwl))
+    #         else:
+    #             kwl = self.note_Keyword_PB.text().split(";")
+    #             kwl.remove(kw)
+    #             self.note_Keyword_PB.setText(";".join(kwl))
+
     def walkDir(self, du_flag=0):
         def isValidUUID(idstring, version=1):
             try:
@@ -1019,6 +1095,7 @@ class MainWindow(QMainWindow):
         # self.note_Import_Progress_PD.setAutoClose(True)
         self.note_Import_Progress_PD.setCancelButton(None)
         self.note_Import_Progress_PD.hide()
+        start_time = datetime.now()
         #
         i = 0
         for type_n in ["Draft", "Archive", "Trash"]:
@@ -1036,13 +1113,15 @@ class MainWindow(QMainWindow):
                         if (time_compare1 | time_compare2):
                             new_note.load()
                             i += 1
+                            timeelps = str(datetime.now() - start_time)
                             self.note_Import_Progress_PD.setValue(i)
-                            self.note_Import_Progress_PD.setLabelText("已有{}条旧笔记导入".format(i))
+                            self.note_Import_Progress_PD.setLabelText("已有{}条旧笔记导入，用时{}".format(i, timeelps))
                     else:
                         new_note.load()
                         i += 1
+                        timeelps = str(datetime.now() - start_time)
                         self.note_Import_Progress_PD.setValue(i)
-                        self.note_Import_Progress_PD.setLabelText("已有{}条旧笔记导入".format(i))
+                        self.note_Import_Progress_PD.setLabelText("已有{}条旧笔记导入，用时{}".format(i, timeelps))
                     # if ((i%10==0) & (i>0)):
                         # print("已有{}记录被导入".format(i))
                         # self.statusBar().showMessage("已有{}记录被导入".format(i))
@@ -1067,14 +1146,16 @@ class MainWindow(QMainWindow):
                         new_note.create(file_path=f_path)
                         i += 1
                         j += 1
+                        timeelps = str(datetime.now() - start_time)
                         self.note_Import_Progress_PD.setValue(j)
-                        self.note_Import_Progress_PD.setLabelText("已有{}条新笔记，共{}条笔记导入".format(j,i))
+                        self.note_Import_Progress_PD.setLabelText("已有{}条新笔记，共{}条笔记导入，用时{}".format(j,i,timeelps))
                 else:
                     new_note.create(file_path=f_path)
                     i += 1
                     j += 1
+                    timeelps = str(datetime.now() - start_time)
                     self.note_Import_Progress_PD.setValue(j)
-                    self.note_Import_Progress_PD.setLabelText("已有{}条新笔记，共{}条笔记导入".format(j,i))
+                    self.note_Import_Progress_PD.setLabelText("已有{}条新笔记，共{}条笔记导入，用时{}".format(j,i,timeelps))
                 # if ((i%10==0) & (i>0)):
                     # print("已有{}记录被导入".format(i))
                     # self.statusBar().showMessage("已有{}记录被导入".format(i))
@@ -1099,3 +1180,8 @@ class MainWindow(QMainWindow):
 
     def locAttachment(self):
         QDesktopServices.openUrl(QUrl.fromLocalFile(self.cur_note.att_dir))
+        
+    def click2Analyze(self):
+        self.ana_DLG = Analysis(self)
+        self.ana_DLG.show()
+

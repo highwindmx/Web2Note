@@ -178,7 +178,7 @@ class NotePack:
                         self.url = url_p
                 # 摘取分类
                 try:
-                    self.cat = soup.title.string
+                    self.cat = soup.title.string.strip()
                 except:
                     pass # self.cat = "未分类"
                 else:

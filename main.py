@@ -5,10 +5,10 @@ from modules.window import MainWindow
 
 def main(argv):
     app = QApplication(sys.argv)
-    imtDlg = ImportDirs()
-    if (not imtDlg.exec_()):
+    imt_Dlg = ImportDirs()
+    if (not imt_Dlg.exec_()):
         # sys.exit(0)
-        dl = imtDlg.initDirlist
+        dl = imt_Dlg.initDirlist
         
         win = MainWindow(dl)
         win.show()
