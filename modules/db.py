@@ -26,18 +26,11 @@ def getNewPath(basedir, basename):
         i += 1
         path = os.path.join(basedir, "({})".format(i).join(name_s))
     return os.path.abspath(path)
-
-class DataBaseJson:
-    def __init__(self):
+   
+class NoteIndex:
+    def __init__(self, dir, tbname, cols, note_root_dir):
         super().__init__()
-        
-    def create(self, path):
-        self.path = getDir(path, "")
-    
-class TBIndex:
-    def __init__(self, db, tbname, cols, note_root_dir):
-        super().__init__()
-        self.db = db
+        self.dir = getDir(dir, "")
         self.name = tbname
         self.cols = cols
         #
@@ -50,7 +43,7 @@ class TBIndex:
         self.note_dir = {}
         for t in ["Draft", "Archive", "Trash"]:
             self.note_dir[t] = getDir(self.note_root_dir, t)
-        self.path = os.path.abspath(os.path.join(self.db.path, "{}_index.json".format(self.name)))
+        self.path = os.path.abspath(os.path.join(self.dir, "{}_index.json".format(self.name)))
         if not os.path.exists(self.path):
             self.data = pd.DataFrame(columns=self.cols)
             self.save()
@@ -58,7 +51,7 @@ class TBIndex:
         else:
             self.read()
             print("这个表已经存在啦，我就不新建咯~~~",self.path)
-     
+         
     def update(self, flag, item):
         new_item = pd.Series([item.type, item.title, item.path, item.ctime, item.mtime, item.atime
                              ,item.url, item.content_ext, item.cat, item.keywords, item.summary] # , item.att_list
@@ -90,7 +83,7 @@ class TBIndex:
             # ?????? 然后做点啥呢？
 
     def archive(self):
-        archive_dir = getDir(self.db.path, "{}_archive".format(self.name))
+        archive_dir = getDir(self.dir, "{}_archive".format(self.name))
         tstmp = str(datetime.timestamp(datetime.now()))
         archive_name = "({})".format(tstmp).join(os.path.splitext(os.path.basename(self.path)))
         self.create() # 万一索引表被误删除时增加鲁棒性
@@ -137,6 +130,7 @@ class NotePack:
             self.getAtt()
             self.getTime()
             self.index_tb.update(flag="add", item=self)
+            
             # print("新加入笔记：",self.title)
         
     def parse(self, file_path):
@@ -188,7 +182,7 @@ class NotePack:
                 except:
                     pass # self.cat = "未分类"
                 else:
-                    if self.cat == self.title:
+                    if (self.cat == self.title) | (self.cat == None):
                         self.cat = "未分类"
         else: # 对于可能是图片或者pdf格式的各类非html笔记
             pass
