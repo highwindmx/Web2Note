@@ -95,7 +95,7 @@ class NoteIndex:
         if tb.empty:
             pass
         else:
-            for col in ["atime", "ctime", "mtime"]:
+            for col in ["atime", "ctime", "mtime"]:#["mtime"]: # 
                 dateset |= set(tb[col].dt.date.unique())
                 #[QDate(2019,2,15),QDate(2019,2,18)]
         return dateset

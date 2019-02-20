@@ -604,9 +604,9 @@ class MainWindow(QMainWindow):
                 c_si = (c_si) | (c_kw) # 可能和计算顺序等有关系，这里用&=,|=会出错
             tb_s = tb_a[c_si].copy()
         else: # 即日期索引
-            search_in = ["atime", "ctime", "mtime"]
+            search_in = ["mtime"] # ["atime", "ctime", "mtime"]
             # print(tb_a["atime"])
-            c_si_dt = c
+            c_si_dt = ~c
             for si in search_in:
                 c_si = (tb_a[si].dt.date == keywords) # 日期这里就一个元素 
                 c_si_dt = (c_si_dt | c_si)
