@@ -99,7 +99,7 @@ class NoteIndex:
                 dateset |= set(tb[col].dt.date.unique())
                 #[QDate(2019,2,15),QDate(2019,2,18)]
         return dateset
-    
+       
 class NotePack:
     def __init__(self, tb):
         super().__init__()
@@ -334,8 +334,7 @@ class NotePack:
         else:
             print("读取错误，{}找不到了".format(self.path))
     
-
-        
-        
+    def pack2DF(self):
+        return self.index_tb.data.loc[self.id]
     
      

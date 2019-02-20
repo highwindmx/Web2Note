@@ -3,6 +3,7 @@ import os
 import uuid
 from datetime import datetime
 import pathlib
+import pandas as pd
 
 from PyQt5.QtCore import (pyqtSignal, Qt, QUrl, QSize, QPoint, QThread, QEventLoop, QFileInfo, QRect, QDate)
 from PyQt5.QtGui import (QIcon, QCursor, QColor, QFont, QDesktopServices,QStandardItemModel) # QPainter,
@@ -27,6 +28,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(60, 60, 1120, 630) # 在这里设置窗口位置和大小
         self.setContentsMargins(0, 0, 0, 0)
         # 
+        self.note_types = {0:"Draft", 1:"Archive", 2:"Trash"}
         self.ctr_showHide_left_panel = 0 # 初始化显隐左侧栏的计数
         self.ctr_showHide_right_panel = 0 # 初始化显隐右侧栏的计数
         # 载入初始值
@@ -554,7 +556,7 @@ class MainWindow(QMainWindow):
         #
         self.note_Attachment_QW.droppedSignal.connect(self.addAttachment)
         self.note_Calendar_QW.clicked.connect(self.click2SearchDate)
-        self.refreshNotesList() # 也算是一种初始化。。。不过必须放在函数包含的各种widget加入之后哦
+        self.refresAllLists() # 也算是一种初始化。。。不过必须放在函数包含的各种widget加入之后哦
         self.refreshKeywordsList()
         
     # 功能函数 
@@ -994,7 +996,7 @@ class MainWindow(QMainWindow):
         self.note_index = NoteIndex(self.note_index_dir, "Note", self.note_col, self.note_root_dir)
         self.note_index.create()
         self.walkDir()     
-        self.refreshNotesList()
+        self.refresAllLists()
         self.refreshKeywordsList()
         self.note_Calendar_QW.genCell(self.note_index.getAllDate())
 
@@ -1002,45 +1004,50 @@ class MainWindow(QMainWindow):
         self.note_index = NoteIndex(self.note_index_dir, "Note", self.note_col, self.note_root_dir)
         self.note_index.create()
         self.walkDir(1)
-        self.refreshNotesList()
+        self.refresAllLists()
         self.refreshKeywordsList()
         self.note_Calendar_QW.genCell(self.note_index.getAllDate())
 
     def sortNote(self, flag):
+        self.statusBar().showMessage("排序中...")
+        table = pd.DataFrame()
+        for index in range(self.note_List_Tab_QW.currentWidget().count()):
+            np = self.note_List_Tab_QW.currentWidget().item(index).data(Qt.UserRole)
+            table = table.append(np.pack2DF())
         if flag == "time0":
-            self.note_index.data.sort_values(by="mtime", ascending=True, inplace=True)
+            table.sort_values(by="mtime", ascending=True, inplace=True)
         elif flag == "time1":
-            self.note_index.data.sort_values(by="mtime", ascending=False, inplace=True)
+            table.sort_values(by="mtime", ascending=False, inplace=True)
         elif flag == "title":
-            self.note_index.data.sort_values(by="title", inplace=True)
+            table.sort_values(by="title", inplace=True)
         elif flag == "Categ":
-            self.note_index.data.sort_values(by="cat", inplace=True)
+            table.sort_values(by="cat", inplace=True)
         elif flag == "Exten":
-            self.note_index.data.sort_values(by="ext", inplace=True)
+            table.sort_values(by="ext", inplace=True)
         else:
             pass
-        self.refreshNotesList()
-
-    def refreshNotesList(self):
+        self.refreshOneList(self.note_List_Tab_QW.currentIndex(), table)
+        self.statusBar().showMessage("排序完成")
+        
+    def refreshOneList(self, key, table):
+        self.note_List_Tab_QW.widget(key).clear()
+        for index, row in table.iterrows():
+            ql_info = NotePack(self.note_index)
+            ql_info.load(index) 
+            ql_item = QListWidgetItem()
+            ql_item.setText(ql_info.title)
+            ql_item.setData(Qt.UserRole, ql_info) # 这个Qt.UserRole 还真是神奇 -_-||
+            self.note_List_Tab_QW.widget(key).addItem(ql_item)
+        
+        
+    def refresAllLists(self):
         try:
-            qw_dict = {"Draft":self.note_List_Tab_Draft_QW
-                      ,"Archive":self.note_List_Tab_Archive_QW
-                      ,"Trash":self.note_List_Tab_Trash_QW
-                      }
-            for qw_Key,qw_Val in qw_dict.items():
-                qw_Val.clear()
-                if self.note_index.data.empty:
-                    self.note_Browser_QW.setHtml("<h2>欢迎使用:)</h2><p>不过索引表暂空，请进行重新加载</p>") # self.reloadAll()
-                else:
-                    tb = self.note_index.data.loc[self.note_index.data["type"].str.contains(qw_Key, na=False)].copy()
-                    for index, row in tb.iterrows():
-                        #
-                        ql_info = NotePack(self.note_index)
-                        ql_info.load(index) 
-                        ql_item = QListWidgetItem()
-                        ql_item.setText(ql_info.title)
-                        ql_item.setData(Qt.UserRole, ql_info) # 这个Qt.UserRole 还真是神奇 -_-||
-                        qw_Val.addItem(ql_item)
+            if self.note_index.data.empty:
+                self.note_Browser_QW.setHtml("<h2>欢迎使用:)</h2><p>不过索引表暂空，请进行重新加载</p>")
+            else:
+                for key, val in self.note_types.items():
+                    tb = self.note_index.data.loc[self.note_index.data["type"].str.contains(val, na=False)].copy()
+                    self.refreshOneList(key, tb)
         except Exception as e:
             print("加载出错:",e)
 
@@ -1052,7 +1059,7 @@ class MainWindow(QMainWindow):
             for index,kw in enumerate(tb):
                 self.note_Keyword_CB.addItem(kw)
                 item = self.note_Keyword_CB.model().item(index, 0) # 大致意思应该是获取刚刚那个item
-                item.setCheckState(False)
+                item.setCheckState(Qt.Unchecked)
                 
                 
                 # self.note_Keyword_AC[kw] = QAction(kw, self.note_Keyword_MN)
@@ -1182,6 +1189,8 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(self.cur_note.att_dir))
         
     def click2Analyze(self):
+        self.statusBar().showMessage("统计中...")
         self.ana_DLG = Analysis(self)
         self.ana_DLG.show()
+        self.statusBar().showMessage("统计完成")
 
