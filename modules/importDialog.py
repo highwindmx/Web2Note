@@ -1,4 +1,5 @@
 import os
+from PyQt5.QtGui import (QIcon, QPixmap)
 from PyQt5.QtWidgets import (QDialog, QWidget, QLabel, QLineEdit, QPushButton, QFileDialog, QGridLayout)
 
 class ImportDirs(QDialog):
@@ -16,6 +17,9 @@ class ImportDirs(QDialog):
         #self.setCentralWidget(interface_QW)
         self.layout = QGridLayout()
         self.setLayout(self.layout)
+        icon = QIcon()
+        icon.addPixmap(QPixmap("./style/logo3.png"))
+        self.setWindowIcon(icon)
         
         class LabLineButton(QWidget):
             def __init__(self, interface, label, dir_index):

@@ -6,7 +6,7 @@ import pathlib
 import pandas as pd
 
 from PyQt5.QtCore import (pyqtSignal, Qt, QUrl, QSize, QPoint, QThread, QEventLoop, QFileInfo, QRect, QDate)
-from PyQt5.QtGui import (QIcon, QCursor, QColor, QFont, QDesktopServices,QStandardItemModel) # QPainter,
+from PyQt5.QtGui import (QIcon, QPixmap, QCursor, QColor, QDesktopServices,QStandardItemModel) # QPainter,
 from PyQt5.QtWidgets import (qApp, QMainWindow, QWidget
                             ,QListWidget, QListWidgetItem, QTabWidget, QCalendarWidget
                             ,QLabel, QLineEdit, QPlainTextEdit, QTextBrowser, QProgressBar, QProgressDialog
@@ -25,6 +25,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         # 构建窗体
         self.setWindowTitle("我的笔记本") # 在这里设置窗口标题
+        icon = QIcon()
+        icon.addPixmap(QPixmap("./style/logo3.png"))
+        self.setWindowIcon(icon)
         self.setGeometry(10, 48, 1120, 656) # 在这里设置窗口位置和大小
         self.setContentsMargins(0, 0, 0, 0)
         # 

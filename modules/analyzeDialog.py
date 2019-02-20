@@ -1,6 +1,6 @@
 import os
 from PyQt5.QtWidgets import (QDialog, QWidget, QLabel, QGridLayout)
-from PyQt5.QtGui import QPixmap, QImage 
+from PyQt5.QtGui import (QIcon, QPixmap, QImage)
 from wordcloud import WordCloud
 import jieba
 
@@ -20,6 +20,9 @@ class Analysis(QDialog):
         #self.setCentralWidget(interface_QW)
         self.layout = QGridLayout()
         self.setLayout(self.layout)
+        icon = QIcon()
+        icon.addPixmap(QPixmap("./style/logo3.png"))
+        self.setWindowIcon(icon)
         
         self.info1_LB = QLabel(self)
         self.info1_LB.setText("笔记库共含{}条笔记，末次更新时间为：{}".format(self.main_Win.note_index.data.shape[0]
