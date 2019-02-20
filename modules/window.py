@@ -213,7 +213,7 @@ class MainWindow(QMainWindow):
 
         self.note_Title_LE = QLineEdit(self)      
         self.note_Keyword_LE = QLineEdit(self)
-
+        
         self.layoutMidTopGrid.addWidget(self.note_Title_LB, 0,0, 1,1)
         self.layoutMidTopGrid.addWidget(self.note_Title_LE, 0,1, 1,6)
         self.layoutMidTopGrid.addWidget(self.note_Keyword_LE, 0,7, 1,3)
@@ -259,10 +259,12 @@ class MainWindow(QMainWindow):
                     item.setCheckState(Qt.Unchecked)
                     kwl = self.getCheckedItem()
                     self.main_Win.note_Keyword_LE.setText("关键词："+";".join(kwl))
+                    self.note_Keyword_LE.home(False)
                 else:
                     item.setCheckState(Qt.Checked)
                     kwl = self.getCheckedItem()
                     self.main_Win.note_Keyword_LE.setText("关键词："+";".join(kwl))
+                    self.note_Keyword_LE.home(False)
                     
             def getCheckedItem(self):
                 checked_items = []
@@ -828,6 +830,7 @@ class MainWindow(QMainWindow):
         if os.path.exists(self.cur_note.path):
             self.note_Title_LE.setText(self.cur_note.title) 
             self.note_Keyword_LE.setText("关键词："+self.cur_note.keywords)
+            self.note_Keyword_LE.home(False) # False是指unselect
             self.note_Time_LB.setText("修改时间：{}".format(self.cur_note.mtime))
             self.note_Link_LB.setText("<html><a href={0}>{0}</a></html>".format(self.cur_note.url))
             self.loadNoteContent()
