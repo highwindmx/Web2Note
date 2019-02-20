@@ -8,7 +8,7 @@ class ImportDirs(QDialog):
         self.note_root_dir = "E:/Share/Note7Web" # 数据存储
         self.note_cur_dir = "E:/Share/notebook/draft" # 导入库
         self.initDirlist = [self.note_index_dir, self.note_root_dir, self.note_cur_dir]
-        self.setWindowTitle("请确认一下路径")
+        self.setWindowTitle("请确认以下目录是否正确，没错的话关掉就好")
         self.initIF()
 
     def initIF(self):

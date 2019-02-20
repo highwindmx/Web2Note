@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (qApp, QMainWindow, QWidget
                             ,QLabel, QLineEdit, QPlainTextEdit, QTextBrowser, QProgressBar, QProgressDialog
                             ,QButtonGroup, QPushButton, QRadioButton, QCheckBox, QComboBox
                             ,QMenu, QFileDialog, QMessageBox, QAction, QFileIconProvider
-                            ,QLayout, QGridLayout, QSplitter, QListView
+                            ,QLayout, QGridLayout, QHBoxLayout, QSplitter, QListView
                             ,QSizePolicy,  # QDesktopWidget, QApplication, 
                             )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         # 构建窗体
         self.setWindowTitle("我的笔记本") # 在这里设置窗口标题
-        self.setGeometry(60, 60, 1120, 630) # 在这里设置窗口位置和大小
+        self.setGeometry(10, 48, 1120, 656) # 在这里设置窗口位置和大小
         self.setContentsMargins(0, 0, 0, 0)
         # 
         self.note_types = {0:"Draft", 1:"Archive", 2:"Trash"}
@@ -33,7 +33,6 @@ class MainWindow(QMainWindow):
         self.ctr_showHide_right_panel = 0 # 初始化显隐右侧栏的计数
         # 载入初始值
         self.setDataDirList(lst)
-        #print(self.data_index_dir, self.note_root_dir, self.note_cur_dir)
         self.initUI()
         
     def initUI(self): # 加载UI
@@ -197,6 +196,7 @@ class MainWindow(QMainWindow):
         
         # 加入中间栏
         self.mid_Panel_QW = QWidget(self)
+        self.mid_Panel_QW.setMinimumWidth(800)
         self.layoutMidGrid = QGridLayout()
         self.layoutMidGrid.setContentsMargins(0,0,0,0)
         self.mid_Panel_QW.setLayout(self.layoutMidGrid)
@@ -210,17 +210,18 @@ class MainWindow(QMainWindow):
         self.note_Title_LB.setText("笔记标题：")
         self.note_Title_LB.setAlignment(Qt.AlignRight)
         self.note_Title_LB.setStyleSheet("font:bold 13pt;")
-        self.layoutMidTopGrid.addWidget(self.note_Title_LB, 0,0, 1,1)
 
         self.note_Title_LE = QLineEdit(self)
+
+        self.layoutMidTopGrid.addWidget(self.note_Title_LB, 0,0, 1,1)
         self.layoutMidTopGrid.addWidget(self.note_Title_LE, 0,1, 1,9)
 
         self.note_Keyword_LB = QLabel(self)
         self.note_Keyword_LB.setText("关键词：")
         self.note_Keyword_LB.setAlignment(Qt.AlignRight) # Qt.AlignBottom and Qt.AlignRight
         self.note_Keyword_LB.setStyleSheet("font:12pt;") # italic 
-        self.layoutMidTopGrid.addWidget(self.note_Keyword_LB, 1,0, 1,1)
-
+        
+        self.note_Keyword_LE = QLineEdit(self)
         class CheckableComboBox(QComboBox):
             def __init__(self, mainwin):
                 super().__init__()
@@ -247,24 +248,19 @@ class MainWindow(QMainWindow):
                         checked_items.append(item.text())
                 return checked_items
 
-        self.note_Keyword_LE = QLineEdit(self)
         self.note_Keyword_CB = CheckableComboBox(self)
-        #self.note_Keyword_PB.setStyleSheet("QPushButton { text-align: left; }")
-        #self.note_Keyword_MN = QMenu()
-        #self.note_Keyword_MN.setMaximumSize(100,100)
-        #self.note_Keyword_PB.setMenu(self.note_Keyword_MN)
+        self.note_Keyword_CB.setMaximumWidth(320)
+        self.layoutMidTopGrid.addWidget(self.note_Keyword_LB, 1,0, 1,1)
         self.layoutMidTopGrid.addWidget(self.note_Keyword_LE, 1,1, 1,6)
         self.layoutMidTopGrid.addWidget(self.note_Keyword_CB, 1,7, 1,3)
 
         self.left_Panel_Show_Hide_BT = QPushButton('>收>',self)
         self.left_Panel_Show_Hide_BT.setFlat(True)
-        self.left_Panel_Show_Hide_BT.setMinimumWidth(40)
+        self.left_Panel_Show_Hide_BT.setMaximumWidth(40)
         self.left_Panel_Show_Hide_BT.setStyleSheet("QPushButton { text-align: left; }")
-        self.layoutMidTopGrid.addWidget(self.left_Panel_Show_Hide_BT, 2,0, 1,1)
-
+        
         self.note_Time_LB = QLabel(self)
-        self.layoutMidTopGrid.addWidget(self.note_Time_LB,  2,1,  1,8)
-
+        
         # 进度条
         class ProgressBar(QProgressBar):
         # https://stackoverflow.com/questions/27564805/place-the-text-in-the-middle-of-qprogressbar-when-setrange0-0-on-windows
@@ -285,28 +281,37 @@ class MainWindow(QMainWindow):
                 
         self.note_Browser_PB = ProgressBar(self)
         self.note_Browser_PB.setObjectName("web_progess_bar_PB")
-        self.note_Browser_PB.setMaximumSize(400, 30)
+        # self.note_Browser_PB.setMaximumSize(400, 30)
         self.note_Browser_PB.setContentsMargins(0,0,0,0)
         self.note_Browser_PB.hide()
-        self.layoutMidTopGrid.addWidget(self.note_Browser_PB, 2,7, 1,2)
-        
+
         self.right_Panel_Show_Hide_BT = QPushButton('<收<',self)
         self.right_Panel_Show_Hide_BT.setFlat(True)
-        self.right_Panel_Show_Hide_BT.setMinimumWidth(40)
+        self.right_Panel_Show_Hide_BT.setMaximumWidth(40)
         self.right_Panel_Show_Hide_BT.setStyleSheet("QPushButton { text-align: right; }")
+        
+        self.layoutMidTopGrid.addWidget(self.left_Panel_Show_Hide_BT, 2,0, 1,1)
+        self.layoutMidTopGrid.addWidget(self.note_Time_LB,  2,1,  1,8)
+        self.layoutMidTopGrid.addWidget(self.note_Browser_PB, 2,1, 1,8)
         self.layoutMidTopGrid.addWidget(self.right_Panel_Show_Hide_BT, 2,9, 1,1)
 
         self.in_Note_Search_LE = QLineEdit(self)
-        self.layoutMidTopGrid.addWidget(self.in_Note_Search_LE, 3,1, 1,6)
-
+        
         self.in_Note_Search_BT = QPushButton('页面内检索',self)
-        self.in_Note_Search_BT.setMinimumWidth(40)
-        self.layoutMidTopGrid.addWidget(self.in_Note_Search_BT, 3,7, 1,2)
-    
+        #self.in_Note_Search_BT.setMaximumWidth(80)
+
         self.in_Note_Search_Reset_BT = QPushButton('重置',self)
-        self.in_Note_Search_Reset_BT.setMinimumWidth(40)
+        self.in_Note_Search_Reset_BT.setMaximumWidth(40)
+        
+        self.layoutMidTopGrid.addWidget(self.in_Note_Search_LE, 3,1, 1,7)
+        self.layoutMidTopGrid.addWidget(self.in_Note_Search_BT, 3,8, 1,1)
         self.layoutMidTopGrid.addWidget(self.in_Note_Search_Reset_BT, 3,9, 1,1)
-        # 按钮集合   
+        # 按钮集合
+        self.buttons_QW = QWidget(self)
+        self.buttonsLayout = QHBoxLayout()
+        self.buttonsLayout.setContentsMargins(0,0,0,0)
+        self.buttons_QW.setLayout(self.buttonsLayout)
+        
         class ClickableQLabel(QLabel):
             labelPressedSignal = pyqtSignal()
             def __init__(self, parent=None):
@@ -325,11 +330,9 @@ class MainWindow(QMainWindow):
                                 <span style='color:grey;font-size:14pt;'>|</span>
                                 <span style='background-color:#6effbf;font-size:16pt;font:bold;'>编辑</span>
                                 ''')
-        self.layoutMidTopGrid.addWidget(self.note_View_Edit_LB, 3,0, 2,1)
-
+        
         self.note_Save_BT = QPushButton('保存',self)
         self.note_Save_BT.setMinimumWidth(40)
-        self.layoutMidTopGrid.addWidget(self.note_Save_BT, 4,1, 1,1)
 
         # self.note_Archive_BT = QPushButton('存档',self)
         # self.note_Archive_BT.setMinimumWidth(40)
@@ -346,40 +349,43 @@ class MainWindow(QMainWindow):
 
         self.note_Zoom_BT = QPushButton('放大',self)
         self.note_Zoom_BT.setMinimumWidth(40)
-        self.layoutMidTopGrid.addWidget(self.note_Zoom_BT, 4,2, 1,1)
-        
+                
         self.note_Edit_Undo_BT = QPushButton('撤销',self)
         self.note_Edit_Undo_BT.setMinimumWidth(40)
-        self.layoutMidTopGrid.addWidget(self.note_Edit_Undo_BT, 4,3, 1,1)
-
+        
         self.note_Edit_Bold_BT = QPushButton('粗',self) # 可以加个颜色的样式
         self.note_Edit_Bold_BT.setStyleSheet("font: bold")
         self.note_Edit_Bold_BT.setMinimumWidth(40)
-        self.layoutMidTopGrid.addWidget(self.note_Edit_Bold_BT, 4,4, 1,1)
-
+        
         self.note_Edit_Red_BT = QPushButton('红',self) # 可以加个颜色的样式
         self.note_Edit_Red_BT.setStyleSheet("color: #ff0000")
-        self.note_Edit_Red_BT.setMinimumWidth(40)
-        self.layoutMidTopGrid.addWidget(self.note_Edit_Red_BT, 4,5, 1,1)        
+        self.note_Edit_Red_BT.setMinimumWidth(40)     
 
         self.note_Edit_Highlight_Yellow_BT = QPushButton('高亮黄',self) # 可以加个颜色的样式
         self.note_Edit_Highlight_Yellow_BT.setStyleSheet("background-color: #ffff00")
         self.note_Edit_Highlight_Yellow_BT.setMinimumWidth(40)
-        self.layoutMidTopGrid.addWidget(self.note_Edit_Highlight_Yellow_BT, 4,6, 1,1)
-
+        
         self.note_Edit_Highlight_Blue_BT = QPushButton('高亮蓝',self) # 可以加个颜色的样式
         self.note_Edit_Highlight_Blue_BT.setStyleSheet("background-color: #00ffff")
         self.note_Edit_Highlight_Blue_BT.setMinimumWidth(40)
-        self.layoutMidTopGrid.addWidget(self.note_Edit_Highlight_Blue_BT, 4,7, 1,1)
 
         self.note_Edit_Unorder_List_BT = QPushButton('弹列',self) # 可以加个颜色的样式
         self.note_Edit_Unorder_List_BT.setMinimumWidth(40)
-        self.layoutMidTopGrid.addWidget(self.note_Edit_Unorder_List_BT, 4,8, 1,1)
-
+        
         self.note_Edit_Order_List_BT = QPushButton('数列',self) # 可以加个颜色的样式
         self.note_Edit_Order_List_BT.setMinimumWidth(40)
-        self.layoutMidTopGrid.addWidget(self.note_Edit_Order_List_BT, 4,9,1,1)
-
+        
+        self.buttonsLayout.addWidget(self.note_View_Edit_LB)
+        self.buttonsLayout.addWidget(self.note_Save_BT)
+        self.buttonsLayout.addWidget(self.note_Zoom_BT)
+        self.buttonsLayout.addWidget(self.note_Edit_Undo_BT)
+        self.buttonsLayout.addWidget(self.note_Edit_Bold_BT)
+        self.buttonsLayout.addWidget(self.note_Edit_Red_BT)  
+        self.buttonsLayout.addWidget(self.note_Edit_Highlight_Yellow_BT)
+        self.buttonsLayout.addWidget(self.note_Edit_Highlight_Blue_BT)
+        self.buttonsLayout.addWidget(self.note_Edit_Unorder_List_BT)
+        self.buttonsLayout.addWidget(self.note_Edit_Order_List_BT)
+        self.layoutMidTopGrid.addWidget(self.buttons_QW, 4,0, 1,10)
         # 浏览页
         self.mid_Bottom_Panel_QW = QWidget(self)
         self.layoutMidBottomGrid = QGridLayout()
@@ -391,7 +397,7 @@ class MainWindow(QMainWindow):
         self.note_Browser_QW = QWebEngineView(self)
         self.note_Browser_QW.setHtml("<h2>欢迎使用:)</h2>")
         #
-        self.note_Viewer_Tab_QW = QTabWidget(self) 
+        self.note_Viewer_Tab_QW = QTabWidget(self)
         self.note_Viewer_Tab_QW.tabBar().hide() # 多加了一行感觉空间利用不经济
         self.note_Viewer_Tab_QW.addTab(self.note_Browser_QW,"浏览")
         self.note_Viewer_Tab_QW.addTab(self.note_Source_QW,"源码")
@@ -401,20 +407,15 @@ class MainWindow(QMainWindow):
         
     # 开始右侧
         self.right_Panel_QW = QWidget(self)
+        self.right_Panel_QW.setMaximumWidth(256)
         self.layoutRightGrid = QGridLayout()
         self.layoutRightGrid.setContentsMargins(0,0,0,0)
         self.right_Panel_QW.setLayout(self.layoutRightGrid)
-        #
-        limit_width_can_expand = QSizePolicy()
-        limit_width_can_expand.PolicyFlag(1) # 所谓的GrowFlag
-        
+
         # 加入链接栏
         self.note_Link_LB = QLabel(self)
         self.note_Link_LB.setObjectName("url_Link_QW")
-        self.note_Link_LB.setWordWrap(True)
-        self.note_Link_LB.setMaximumSize(400, 30)
         self.note_Link_LB.setContentsMargins(10,0,10,0)
-        self.note_Link_LB.setSizePolicy(limit_width_can_expand)
         self.note_Link_LB.setOpenExternalLinks(True) # 或者可以试试按钮加信号 QtGui.QDesktopServices.openUrl(QtCore.QUrl('http://www.hao123.com'))
         # 加入附件栏
         class DragDropList(QListWidget):
@@ -522,8 +523,6 @@ class MainWindow(QMainWindow):
         menu_Bar_Reload_New_AC.triggered.connect(self.click2ReloadNew)
         menu_Bar_Analyze_Stt_AC.triggered.connect(self.click2Analyze)
 
-        # self.search_And_RBT.toggled.connect(self.searchAndOrState)
-        # self.search_Or_RBT.toggled.connect(self.searchAndOrState)
         self.search_BT.clicked.connect(self.click2SearchKeyWords)
         self.search_Reset_BT.clicked.connect(self.click2ResetSearchKeywords)
         #
@@ -1011,9 +1010,11 @@ class MainWindow(QMainWindow):
     def sortNote(self, flag):
         self.statusBar().showMessage("排序中...")
         table = pd.DataFrame()
+        npid = []
         for index in range(self.note_List_Tab_QW.currentWidget().count()):
             np = self.note_List_Tab_QW.currentWidget().item(index).data(Qt.UserRole)
-            table = table.append(np.pack2DF())
+            npid.append(np.id)
+            table = self.note_index.data.loc[npid]
         if flag == "time0":
             table.sort_values(by="mtime", ascending=True, inplace=True)
         elif flag == "time1":
@@ -1060,27 +1061,6 @@ class MainWindow(QMainWindow):
                 self.note_Keyword_CB.addItem(kw)
                 item = self.note_Keyword_CB.model().item(index, 0) # 大致意思应该是获取刚刚那个item
                 item.setCheckState(Qt.Unchecked)
-                
-                
-                # self.note_Keyword_AC[kw] = QAction(kw, self.note_Keyword_MN)
-                # self.note_Keyword_AC[kw].setCheckable(True)
-                # # self.note_Keyword_AC[kw].triggered.connect(lambda: self.updateKeywords(item))
-                # self.note_Keyword_AC[kw].triggered.connect(lambda: self.updateKeywords(self.note_Keyword_AC[kw],kw))
-                # .addAction(self.note_Keyword_AC[kw])
-    
-    # def updateKeywords(self, item, kw):
-    #     # print(self, item, kw)
-    #     if self.first_item:
-    #         pass
-    #     else:
-    #         if item.isChecked():
-    #             kwl = self.note_Keyword_PB.text().split(";")
-    #             kwl.append(kw)
-    #             self.note_Keyword_PB.setText(";".join(kwl))
-    #         else:
-    #             kwl = self.note_Keyword_PB.text().split(";")
-    #             kwl.remove(kw)
-    #             self.note_Keyword_PB.setText(";".join(kwl))
 
     def walkDir(self, du_flag=0):
         def isValidUUID(idstring, version=1):

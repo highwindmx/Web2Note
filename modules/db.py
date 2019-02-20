@@ -333,8 +333,5 @@ class NotePack:
             print("笔记解析完成:",self.title)
         else:
             print("读取错误，{}找不到了".format(self.path))
-    
-    def pack2DF(self):
-        return self.index_tb.data.loc[self.id]
-    
+        
      
