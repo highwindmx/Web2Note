@@ -604,9 +604,9 @@ class MainWindow(QMainWindow):
                 c_si = (c_si) | (c_kw) # 可能和计算顺序等有关系，这里用&=,|=会出错
             tb_s = tb_a[c_si].copy()
         else: # 即日期索引
-            search_in = ["mtime"] # ["atime", "ctime", "mtime"]
+            search_in = ["atime", "ctime", "mtime"] # ["mtime"]
             # print(tb_a["atime"])
-            c_si_dt = ~c
+            c_si_dt = ~c # 注意和上边的初始值对应
             for si in search_in:
                 c_si = (tb_a[si].dt.date == keywords) # 日期这里就一个元素 
                 c_si_dt = (c_si_dt | c_si)
@@ -698,7 +698,13 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage('可以编辑了。。')
 
     def click2Save(self):
-        self.saveNote()
+        if self.note_Title_LE.text() == "":
+            self.note_Title_LE.setText("新的笔记")
+            self.note_Title_LE.home(True)
+            self.addNote()
+            self.saveNote()
+        else:
+            self.saveNote()
         
     # def click2Arcv(self):
     #     self.sel_item = self.cur_item
