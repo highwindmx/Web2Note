@@ -248,7 +248,8 @@ class MainWindow(QMainWindow):
         self.note_Browser_PB.setObjectName("web_progess_bar_PB")
         # self.note_Browser_PB.setMaximumWidth(50)
         self.note_Browser_PB.setContentsMargins(0,0,0,0)
-        self.note_Browser_PB.hide()   
+        self.note_Browser_PB.hide()
+        
         class CheckableComboBox(QComboBox):
             def __init__(self, mainwin):
                 super().__init__()
@@ -262,12 +263,12 @@ class MainWindow(QMainWindow):
                     item.setCheckState(Qt.Unchecked)
                     kwl = self.getCheckedItem()
                     self.main_Win.note_Keyword_LE.setText("关键词："+";".join(kwl))
-                    self.note_Keyword_LE.home(False)
+                    self.main_Win.note_Keyword_LE.home(False)
                 else:
                     item.setCheckState(Qt.Checked)
                     kwl = self.getCheckedItem()
                     self.main_Win.note_Keyword_LE.setText("关键词："+";".join(kwl))
-                    self.note_Keyword_LE.home(False)
+                    self.main_Win.note_Keyword_LE.home(False)
                     
             def getCheckedItem(self):
                 checked_items = []
@@ -276,6 +277,27 @@ class MainWindow(QMainWindow):
                     if item.checkState() == Qt.Checked:
                         checked_items.append(item.text())
                 return checked_items
+                
+            def checkCertainItem(self, keyword):
+                for index in range(self.count()):
+                    item = self.model().item(index)
+                    if item.text() == keyword:
+                        item.setCheckState(Qt.Checked)
+                    else:
+                        pass
+                        
+            def refreshList(self):
+                self.clear()
+                df = self.main_Win.note_index.data
+                if df.empty:
+                    pass
+                else:
+                    tb = df["keywords"].sort_values().unique().copy()
+                    for index,kw in enumerate(tb):
+                        self.addItem(kw)
+                        item = self.model().item(index, 0) # 大致意思应该是获取刚刚那个item
+                        item.setCheckState(Qt.Unchecked)
+                
         self.note_Keyword_CB = CheckableComboBox(self)
         self.note_Keyword_CB.setMaximumWidth(240)
         #
@@ -550,7 +572,7 @@ class MainWindow(QMainWindow):
         self.note_Attachment_QW.droppedSignal.connect(self.addAttachment)
         self.note_Calendar_QW.clicked.connect(self.click2SearchDate)
         self.refresAllLists() # 也算是一种初始化。。。不过必须放在函数包含的各种widget加入之后哦
-        self.refreshKeywordsList()
+        self.note_Keyword_CB.refreshList()
         
     # 功能函数 
     def setDataDirList(self, lst):
@@ -834,11 +856,12 @@ class MainWindow(QMainWindow):
         self.saveFlag=(if_t & if_k & if_a) # 如果有一个假就说明发生改变 if_c & 
      
     def loadNote(self):
-        self.refreshKeywordsList()
+        self.note_Keyword_CB.refreshList()
         self.cur_note.load()
         if os.path.exists(self.cur_note.path):
             self.note_Title_LE.setText(self.cur_note.title) 
             self.note_Keyword_LE.setText("关键词："+self.cur_note.keywords)
+            self.note_Keyword_CB.checkCertainItem(self.cur_note.keywords)
             self.note_Keyword_LE.home(False) # False是指unselect
             self.note_Time_LB.setText("修改时间：{}".format(self.cur_note.mtime))
             self.note_Link_LB.setText("<html><a href={0}>{0}</a></html>".format(self.cur_note.url))
@@ -998,7 +1021,7 @@ class MainWindow(QMainWindow):
         self.note_index.create()
         self.walkDir()     
         self.refresAllLists()
-        self.refreshKeywordsList()
+        self.note_Keyword_CB.refreshList()
         self.note_Calendar_QW.genCell(self.note_index.getAllDate())
 
     def reloadNew(self):
@@ -1006,7 +1029,7 @@ class MainWindow(QMainWindow):
         self.note_index.create()
         self.walkDir(1)
         self.refresAllLists()
-        self.refreshKeywordsList()
+        self.note_Keyword_CB.refreshList()
         self.note_Calendar_QW.genCell(self.note_index.getAllDate())
 
     def sortNote(self, flag):
@@ -1041,8 +1064,7 @@ class MainWindow(QMainWindow):
             ql_item.setText(ql_info.title)
             ql_item.setData(Qt.UserRole, ql_info) # 这个Qt.UserRole 还真是神奇 -_-||
             self.note_List_Tab_QW.widget(key).addItem(ql_item)
-        
-        
+
     def refresAllLists(self):
         try:
             if self.note_index.data.empty:
@@ -1053,16 +1075,6 @@ class MainWindow(QMainWindow):
                     self.refreshOneList(key, tb)
         except Exception as e:
             print("加载出错:",e)
-
-    def refreshKeywordsList(self):
-        if self.note_index.data.empty:
-            pass
-        else:
-            tb = self.note_index.data["keywords"].sort_values().unique().copy()
-            for index,kw in enumerate(tb):
-                self.note_Keyword_CB.addItem(kw)
-                item = self.note_Keyword_CB.model().item(index, 0) # 大致意思应该是获取刚刚那个item
-                item.setCheckState(Qt.Unchecked)
 
     def walkDir(self, du_flag=0):
         def isValidUUID(idstring, version=1):

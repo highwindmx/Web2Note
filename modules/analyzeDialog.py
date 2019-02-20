@@ -23,6 +23,7 @@ class Analysis(QDialog):
         icon = QIcon()
         icon.addPixmap(QPixmap("./style/logo3.png"))
         self.setWindowIcon(icon)
+        self.setWindowTitle("笔记统计结果")
         
         self.info1_LB = QLabel(self)
         self.info1_LB.setText("笔记库共含{}条笔记，末次更新时间为：{}".format(self.main_Win.note_index.data.shape[0]
