@@ -209,58 +209,21 @@ class MainWindow(QMainWindow):
         self.note_Title_LB = QLabel(self)
         self.note_Title_LB.setText("笔记标题：")
         self.note_Title_LB.setAlignment(Qt.AlignRight)
-        self.note_Title_LB.setStyleSheet("font:bold 13pt;")
+        self.note_Title_LB.setStyleSheet("font:bold 12pt;")
 
-        self.note_Title_LE = QLineEdit(self)
+        self.note_Title_LE = QLineEdit(self)      
+        self.note_Keyword_LE = QLineEdit(self)
 
         self.layoutMidTopGrid.addWidget(self.note_Title_LB, 0,0, 1,1)
-        self.layoutMidTopGrid.addWidget(self.note_Title_LE, 0,1, 1,9)
-
-        self.note_Keyword_LB = QLabel(self)
-        self.note_Keyword_LB.setText("关键词：")
-        self.note_Keyword_LB.setAlignment(Qt.AlignRight) # Qt.AlignBottom and Qt.AlignRight
-        self.note_Keyword_LB.setStyleSheet("font:12pt;") # italic 
+        self.layoutMidTopGrid.addWidget(self.note_Title_LE, 0,1, 1,6)
+        self.layoutMidTopGrid.addWidget(self.note_Keyword_LE, 0,7, 1,3)
         
-        self.note_Keyword_LE = QLineEdit(self)
-        class CheckableComboBox(QComboBox):
-            def __init__(self, mainwin):
-                super().__init__()
-                self.main_Win = mainwin
-                self.view().pressed.connect(self.handleItemPressed)
-                self.setModel(QStandardItemModel(self))
-                
-            def handleItemPressed(self, index):
-                item = self.model().itemFromIndex(index)
-                if item.checkState() == Qt.Checked:
-                    item.setCheckState(Qt.Unchecked)
-                    kwl = self.getCheckedItem()
-                    self.main_Win.note_Keyword_LE.setText(";".join(kwl))
-                else:
-                    item.setCheckState(Qt.Checked)
-                    kwl = self.getCheckedItem()
-                    self.main_Win.note_Keyword_LE.setText(";".join(kwl))
-                    
-            def getCheckedItem(self):
-                checked_items = []
-                for index in range(self.count()):
-                    item = self.model().item(index)
-                    if item.checkState() == Qt.Checked:
-                        checked_items.append(item.text())
-                return checked_items
-
-        self.note_Keyword_CB = CheckableComboBox(self)
-        self.note_Keyword_CB.setMaximumWidth(320)
-        self.layoutMidTopGrid.addWidget(self.note_Keyword_LB, 1,0, 1,1)
-        self.layoutMidTopGrid.addWidget(self.note_Keyword_LE, 1,1, 1,6)
-        self.layoutMidTopGrid.addWidget(self.note_Keyword_CB, 1,7, 1,3)
-
         self.left_Panel_Show_Hide_BT = QPushButton('>收>',self)
         self.left_Panel_Show_Hide_BT.setFlat(True)
         self.left_Panel_Show_Hide_BT.setMaximumWidth(40)
         self.left_Panel_Show_Hide_BT.setStyleSheet("QPushButton { text-align: left; }")
         
         self.note_Time_LB = QLabel(self)
-        
         # 进度条
         class ProgressBar(QProgressBar):
         # https://stackoverflow.com/questions/27564805/place-the-text-in-the-middle-of-qprogressbar-when-setrange0-0-on-windows
@@ -278,34 +241,50 @@ class MainWindow(QMainWindow):
                                    width: 10px;
                                    margin: 0px;
                                    }""")
-                
         self.note_Browser_PB = ProgressBar(self)
         self.note_Browser_PB.setObjectName("web_progess_bar_PB")
-        # self.note_Browser_PB.setMaximumSize(400, 30)
+        # self.note_Browser_PB.setMaximumWidth(50)
         self.note_Browser_PB.setContentsMargins(0,0,0,0)
-        self.note_Browser_PB.hide()
-
+        self.note_Browser_PB.hide()   
+        class CheckableComboBox(QComboBox):
+            def __init__(self, mainwin):
+                super().__init__()
+                self.main_Win = mainwin
+                self.view().pressed.connect(self.handleItemPressed)
+                self.setModel(QStandardItemModel(self))
+                
+            def handleItemPressed(self, index):
+                item = self.model().itemFromIndex(index)
+                if item.checkState() == Qt.Checked:
+                    item.setCheckState(Qt.Unchecked)
+                    kwl = self.getCheckedItem()
+                    self.main_Win.note_Keyword_LE.setText("关键词："+";".join(kwl))
+                else:
+                    item.setCheckState(Qt.Checked)
+                    kwl = self.getCheckedItem()
+                    self.main_Win.note_Keyword_LE.setText("关键词："+";".join(kwl))
+                    
+            def getCheckedItem(self):
+                checked_items = []
+                for index in range(self.count()):
+                    item = self.model().item(index)
+                    if item.checkState() == Qt.Checked:
+                        checked_items.append(item.text())
+                return checked_items
+        self.note_Keyword_CB = CheckableComboBox(self)
+        self.note_Keyword_CB.setMaximumWidth(240)
+        #
         self.right_Panel_Show_Hide_BT = QPushButton('<收<',self)
         self.right_Panel_Show_Hide_BT.setFlat(True)
         self.right_Panel_Show_Hide_BT.setMaximumWidth(40)
         self.right_Panel_Show_Hide_BT.setStyleSheet("QPushButton { text-align: right; }")
-        
-        self.layoutMidTopGrid.addWidget(self.left_Panel_Show_Hide_BT, 2,0, 1,1)
-        self.layoutMidTopGrid.addWidget(self.note_Time_LB,  2,1,  1,8)
-        self.layoutMidTopGrid.addWidget(self.note_Browser_PB, 2,1, 1,8)
-        self.layoutMidTopGrid.addWidget(self.right_Panel_Show_Hide_BT, 2,9, 1,1)
+        #
+        self.layoutMidTopGrid.addWidget(self.left_Panel_Show_Hide_BT, 1,0, 1,1)
+        self.layoutMidTopGrid.addWidget(self.note_Time_LB,  1,1,  1,3)
+        self.layoutMidTopGrid.addWidget(self.note_Browser_PB, 1,4, 1,3)
+        self.layoutMidTopGrid.addWidget(self.note_Keyword_CB, 1,7, 1,2)
+        self.layoutMidTopGrid.addWidget(self.right_Panel_Show_Hide_BT, 1,9, 1,1)
 
-        self.in_Note_Search_LE = QLineEdit(self)
-        
-        self.in_Note_Search_BT = QPushButton('页面内检索',self)
-        #self.in_Note_Search_BT.setMaximumWidth(80)
-
-        self.in_Note_Search_Reset_BT = QPushButton('重置',self)
-        self.in_Note_Search_Reset_BT.setMaximumWidth(40)
-        
-        self.layoutMidTopGrid.addWidget(self.in_Note_Search_LE, 3,1, 1,7)
-        self.layoutMidTopGrid.addWidget(self.in_Note_Search_BT, 3,8, 1,1)
-        self.layoutMidTopGrid.addWidget(self.in_Note_Search_Reset_BT, 3,9, 1,1)
         # 按钮集合
         self.buttons_QW = QWidget(self)
         self.buttonsLayout = QHBoxLayout()
@@ -385,7 +364,7 @@ class MainWindow(QMainWindow):
         self.buttonsLayout.addWidget(self.note_Edit_Highlight_Blue_BT)
         self.buttonsLayout.addWidget(self.note_Edit_Unorder_List_BT)
         self.buttonsLayout.addWidget(self.note_Edit_Order_List_BT)
-        self.layoutMidTopGrid.addWidget(self.buttons_QW, 4,0, 1,10)
+        self.layoutMidTopGrid.addWidget(self.buttons_QW, 3,0, 1,10)
         # 浏览页
         self.mid_Bottom_Panel_QW = QWidget(self)
         self.layoutMidBottomGrid = QGridLayout()
@@ -401,7 +380,17 @@ class MainWindow(QMainWindow):
         self.note_Viewer_Tab_QW.tabBar().hide() # 多加了一行感觉空间利用不经济
         self.note_Viewer_Tab_QW.addTab(self.note_Browser_QW,"浏览")
         self.note_Viewer_Tab_QW.addTab(self.note_Source_QW,"源码")
-        self.layoutMidBottomGrid.addWidget(self.note_Viewer_Tab_QW, 0,0, 1, 1)
+             
+        self.in_Note_Search_LE = QLineEdit(self)
+        self.in_Note_Search_BT = QPushButton('页面内检索',self)
+        self.in_Note_Search_Reset_BT = QPushButton('重置',self)
+        self.in_Note_Search_Reset_BT.setMaximumWidth(40)
+        
+        self.layoutMidBottomGrid.addWidget(self.note_Viewer_Tab_QW, 0,0, 1,10)
+        self.layoutMidBottomGrid.addWidget(self.in_Note_Search_LE, 1,0, 1,7)
+        self.layoutMidBottomGrid.addWidget(self.in_Note_Search_BT, 1,7, 1,2)
+        self.layoutMidBottomGrid.addWidget(self.in_Note_Search_Reset_BT, 1,9, 1,1)
+        
         self.layoutMidGrid.addWidget(self.mid_Top_Panel_QW, 0,0, 1,1)
         self.layoutMidGrid.addWidget(self.mid_Bottom_Panel_QW, 1,0, 1,1)
         
@@ -822,7 +811,7 @@ class MainWindow(QMainWindow):
 
     def ifSaved(self):
         if_t = (self.cur_note.title == self.note_Title_LE.text())
-        if_k = (self.cur_note.keywords == self.note_Keyword_LE.text())
+        if_k = (self.cur_note.keywords == self.note_Keyword_LE.text().lstrip("关键词："))
         # if os.path.splitext(self.cur_note.content)[1] == ".html":
         #     prv_note_html = self.cur_note_html
         #     self.getHTMLContent() #
@@ -834,10 +823,11 @@ class MainWindow(QMainWindow):
         self.saveFlag=(if_t & if_k & if_a) # 如果有一个假就说明发生改变 if_c & 
      
     def loadNote(self):
+        self.refreshKeywordsList()
         self.cur_note.load()
         if os.path.exists(self.cur_note.path):
             self.note_Title_LE.setText(self.cur_note.title) 
-            self.note_Keyword_LE.setText(self.cur_note.keywords)
+            self.note_Keyword_LE.setText("关键词："+self.cur_note.keywords)
             self.note_Time_LB.setText("修改时间：{}".format(self.cur_note.mtime))
             self.note_Link_LB.setText("<html><a href={0}>{0}</a></html>".format(self.cur_note.url))
             self.loadNoteContent()
@@ -917,7 +907,7 @@ class MainWindow(QMainWindow):
 
     def saveNote(self):
         self.cur_note.title = self.note_Title_LE.text()
-        self.cur_note.keywords = self.note_Keyword_LE.text()
+        self.cur_note.keywords = self.note_Keyword_LE.text().lstrip("关键词：")
         self.getHTMLContent()
         self.cur_note.update(content = self.cur_note_html)
         # -> item.data
