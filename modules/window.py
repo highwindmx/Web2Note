@@ -6,7 +6,7 @@ import pathlib
 import pandas as pd
 
 from PyQt5.QtCore import (pyqtSignal, Qt, QUrl, QSize, QPoint, QThread, QEventLoop, QFileInfo, QRect, QDate)
-from PyQt5.QtGui import (QIcon, QPixmap, QCursor, QColor, QDesktopServices,QStandardItemModel) # QPainter,
+from PyQt5.QtGui import (QIcon, QPixmap, QCursor, QColor, QDesktopServices, QStandardItemModel) # QPainter,
 from PyQt5.QtWidgets import (qApp, QMainWindow, QWidget
                             ,QListWidget, QListWidgetItem, QTabWidget, QCalendarWidget
                             ,QLabel, QLineEdit, QPlainTextEdit, QTextBrowser, QProgressBar, QProgressDialog
@@ -17,7 +17,8 @@ from PyQt5.QtWidgets import (qApp, QMainWindow, QWidget
                             )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from .db import (NoteIndex, NotePack)
-from .analyzeDialog import Analysis
+from .statisticDialog import NoteStatAnalysis
+from .audioRecordDialog import AudioAnalysis
 
 class MainWindow(QMainWindow):
     onHtmlGot = pyqtSignal() # 不要动它，答案见：https://stackoverflow.com/questions/48386253/save-html-files-in-qwebengineview-browser
@@ -56,7 +57,9 @@ class MainWindow(QMainWindow):
         
         self.menu_Bar_Analyze = self.menu_Bar.addMenu('分析')
         menu_Bar_Analyze_Stt_AC = QAction(QIcon("./style/logo3.png"), '统计', self)
+        menu_Bar_Analyze_Aud_AC = QAction(QIcon("./style/logo3.png"), '语音', self)
         self.menu_Bar_Analyze.addAction(menu_Bar_Analyze_Stt_AC)
+        self.menu_Bar_Analyze.addAction(menu_Bar_Analyze_Aud_AC)
 
     # 主窗体
         central_QW = QWidget(self)
@@ -537,8 +540,8 @@ class MainWindow(QMainWindow):
         menu_Bar_Reload_Import_AC.triggered.connect(self.importNoteFolder)
         menu_Bar_Reload_All_AC.triggered.connect(self.click2Reload)     
         menu_Bar_Reload_New_AC.triggered.connect(self.click2ReloadNew)
-        menu_Bar_Analyze_Stt_AC.triggered.connect(self.click2Analyze)
-
+        menu_Bar_Analyze_Stt_AC.triggered.connect(self.click2SumUpAlz)
+        menu_Bar_Analyze_Aud_AC.triggered.connect(self.click2RecordAlz)
         self.search_BT.clicked.connect(self.click2SearchKeyWords)
         self.search_Reset_BT.clicked.connect(self.click2ResetSearchKeywords)
         #
@@ -1182,9 +1185,14 @@ class MainWindow(QMainWindow):
     def locAttachment(self):
         QDesktopServices.openUrl(QUrl.fromLocalFile(self.cur_note.att_dir))
         
-    def click2Analyze(self):
+    def click2SumUpAlz(self):
         self.statusBar().showMessage("统计中...")
-        self.ana_DLG = Analysis(self)
+        self.ana_DLG = NoteStatAnalysis(self)
         self.ana_DLG.show()
         self.statusBar().showMessage("统计完成")
-
+    
+    def click2RecordAlz(self):
+        self.statusBar().showMessage("开启录音功能中...")
+        self.aud_DLG = AudioAnalysis(self)
+        self.aud_DLG.show()
+        self.statusBar().showMessage("统计完成")

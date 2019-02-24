@@ -4,20 +4,13 @@ from PyQt5.QtGui import (QIcon, QPixmap, QImage)
 from wordcloud import WordCloud
 import jieba
 
-class Analysis(QDialog):
+class NoteStatAnalysis(QDialog):
     def __init__(self, mainwin):
         super().__init__()
         self.main_Win = mainwin
-        # self.note_index_dir = "E:/Share/Note7Web/Index" # 数据索引
-        # self.note_root_dir = "E:/Share/Note7Web" # 数据存储
-        # self.note_cur_dir = "E:/Share/notebook/draft" # 导入库
-        # self.initDirlist = [self.note_index_dir, self.note_root_dir, self.note_cur_dir]
-        # self.setWindowTitle("请确认一下路径")
         self.initIF()
 
     def initIF(self):
-        #interface_QW = QWidget(self)
-        #self.setCentralWidget(interface_QW)
         self.layout = QGridLayout()
         self.setLayout(self.layout)
         icon = QIcon()
