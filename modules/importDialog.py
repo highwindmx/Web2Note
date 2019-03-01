@@ -46,7 +46,11 @@ class ImportDirs(QDialog):
                 self.import_BT.clicked.connect(self.click2ChangeDir)
             
             def click2ChangeDir(self):
-                new_dir = QFileDialog().getExistingDirectory(self, "Open file", self.import_LE.text())
+                options = QFileDialog.Options()
+                options |= QFileDialog.DontUseNativeDialog #啃爹啊，5.12的文档中是DontUseNativeDialogs，少个s
+                options |= ~QFileDialog.ShowDirsOnly # 还是得活学活用才行 
+                new_dir = QFileDialog.getExistingDirectory(self, "选择目录", self.import_LE.text(), options=options)
+                #就是这个非NativeDialog加载的又慢，长得又难看，。。。-_-|| 为了搞个能同时显示文件夹directory和文件file的FileDialog也是醉了
                 self.import_LE.setText(new_dir)
                 self.IF.initDirlist[self.diridx] = new_dir
      

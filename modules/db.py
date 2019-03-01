@@ -106,7 +106,7 @@ class NotePack:
         self.index_tb = tb
         self.content_ext = ".html"
         self.info_ext = ".info"
-        self.att_name = "附件"
+        self.att_dir_name = "附件"
 
 # 增        
     def create(self, file_path=None):
@@ -170,10 +170,10 @@ class NotePack:
                 # 摘取URL
                 try:
                     comments = soup.findAll(text=lambda text:isinstance(text, Comment))
+                    url_p = comments[0].split("url:")[1].split("saved date:")[0].strip()
                 except:
                     pass
                 else:
-                    url_p = comments[0].split("url:")[1].split("saved date:")[0].strip()
                     if url_p[:4] == "http": # 修正部分以前一些本地笔记重新用singleFile保存的链接为file://开头
                         self.url = url_p
                 # 摘取分类
@@ -211,7 +211,7 @@ class NotePack:
             print("笔记信息写入出错：",e)
     
     def getAtt(self):
-        self.att_dir = getDir(self.path, self.att_name)
+        self.att_dir = getDir(self.path, self.att_dir_name)
         self.att_list = os.listdir(self.att_dir)
     
     def getTime(self, path=None):
@@ -321,7 +321,7 @@ class NotePack:
                     self.cat = info["cat"]
                     self.keywords = info["keywords"]
                     self.summary = info["summary"]
-                elif f == self.att_name:
+                elif f == self.att_dir_name:
                     self.getAtt()
                 else:
                     self.content = path           

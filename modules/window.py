@@ -18,7 +18,9 @@ from PyQt5.QtWidgets import (qApp, QMainWindow, QWidget
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from .db import (NoteIndex, NotePack)
 from .statisticDialog import NoteStatAnalysis
-from .audioRecordDialog import AudioAnalysis
+#from .audioRecorder import AudioAnalysis
+#from .audioRecordDialog import AudioAnalysis
+from .audioInOut import AudioAnalysis
 
 class MainWindow(QMainWindow):
     onHtmlGot = pyqtSignal() # 不要动它，答案见：https://stackoverflow.com/questions/48386253/save-html-files-in-qwebengineview-browser
@@ -36,9 +38,19 @@ class MainWindow(QMainWindow):
         self.ctr_showHide_left_panel = 0 # 初始化显隐左侧栏的计数
         self.ctr_showHide_right_panel = 0 # 初始化显隐右侧栏的计数
         # 载入初始值
-        self.setDataDirList(lst)
+        self.initDataDirList(lst)
         self.initUI()
-        
+    
+    def initDataDirList(self, lst):
+        self.note_index_dir = lst[0] # 数据库
+        self.note_root_dir = lst[1] # 数据表
+        self.note_cur_dir = lst[2] # 导入库     
+        # 初始化构建
+        self.note_col = ["type","title","path","ctime","mtime","atime"
+                        ,"url","ext","cat","keywords","summary"] # ,"attachments"
+        self.note_index = NoteIndex(self.note_index_dir, "Note", self.note_col, self.note_root_dir)
+        self.note_index.create()
+    
     def initUI(self): # 加载UI
         # 菜单栏
         self.menu_Bar = self.menuBar()
@@ -577,17 +589,7 @@ class MainWindow(QMainWindow):
         self.refresAllLists() # 也算是一种初始化。。。不过必须放在函数包含的各种widget加入之后哦
         self.note_Keyword_CB.refreshList()
         
-    # 功能函数 
-    def setDataDirList(self, lst):
-        self.note_index_dir = lst[0] # 数据库
-        self.note_root_dir = lst[1] # 数据表
-        self.note_cur_dir = lst[2] # 导入库     
-        # 初始化构建
-        self.note_col = ["type","title","path","ctime","mtime","atime"
-                        ,"url","ext","cat","keywords","summary"] # ,"attachments"
-        self.note_index = NoteIndex(self.note_index_dir, "Note", self.note_col, self.note_root_dir)
-        self.note_index.create()
-        
+    # 功能函数        
     def click2SearchKeyWords(self):
         kwl = self.search_Input_QW.toPlainText().split("\n")
         if kwl == [""]:
@@ -1193,6 +1195,13 @@ class MainWindow(QMainWindow):
     
     def click2RecordAlz(self):
         self.statusBar().showMessage("开启录音功能中...")
-        self.aud_DLG = AudioAnalysis(self)
+        try:
+            path = os.path.join(self.cur_note.path, self.cur_note.att_dir_name)
+        except Exception as e:
+            print(e)
+            path = self.note_cur_dir
+        else:
+            pass
+        self.aud_DLG = AudioAnalysis(self, path)
         self.aud_DLG.show()
         self.statusBar().showMessage("统计完成")
