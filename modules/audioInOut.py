@@ -8,7 +8,7 @@ from PyQt5.QtMultimedia import (QAudioOutput, QAudioInput, QAudio, QMultimedia, 
                                ,QAudioDeviceInfo, QAudioProbe, QMediaPlayer, QMediaContent)
 import pyqtgraph as pg
 import wave
-#import scipy.io.wavfile as scwav
+import scipy.io.wavfile as scwav
 from python_speech_features import mfcc
 import librosa
 # 没办法scipy.talkbox那个库总是安装失败。。。
@@ -45,7 +45,7 @@ class Audio:
         #
         self.threshold = threshold
         self.save_dir = save_dir
-        self.save_path = "test.wav"
+        self.save_path = "./sound/test.wav"
         
     def saveWave(self):
         with wave.open(self.save_path, 'wb') as wf:
@@ -307,9 +307,11 @@ class AudioAnalysis(QDialog):
         c2 = ((self.is_snd_recording == True) & (self.snd_record_ctr % 2 == 0))
         if (c0 | c1 | c2):
             self.cur_item = item
+            sound_dir = "./sound/"
             #self.cur_wave = os.path.abspath(item.data(Qt.UserRole)[0])
             self.cur_wave = item.data(Qt.UserRole)[0]
-            with wave.open(self.cur_wave, 'rb') as wf:
+            sound_path = os.path.join(sound_dir, self.cur_wave)
+            with wave.open(sound_path, 'rb') as wf:
                 data = wf.readframes(wf.getnframes())
                 self.audio.play_buffer.setData(data)
                 self.audio.play_buffer.open(QIODevice.ReadOnly)
@@ -378,6 +380,7 @@ class AudioAnalysis(QDialog):
         
     def compareMFCC(self, demo_path):
         mfcc1 = self.getMFCC(self.audio.save_path)
+        print(demo_path)
         mfcc2 = self.getMFCC(demo_path)
         norm = lambda x, y: nlnorm(x-y, ord=1)
         d, cost_matrix, acc_cost_matrix, path = dtw(mfcc1.T, mfcc2.T, dist=norm)
@@ -386,8 +389,9 @@ class AudioAnalysis(QDialog):
        
     def getMinDist(self):
         i = 1000000
+        sound_dir = "./sound/"
         for k in self.wave_dict:
-            self.wave_dict[k][1] = self.compareMFCC(self.wave_dict[k][0])
+            self.wave_dict[k][1] = self.compareMFCC(os.path.join(sound_dir, self.wave_dict[k][0]))
             print("{}：{:.1f}".format(k, self.wave_dict[k][1]))
             i = min(i, self.wave_dict[k][1])
             if i == self.wave_dict[k][1]:
