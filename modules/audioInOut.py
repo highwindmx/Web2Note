@@ -2,23 +2,22 @@ import os
 import numpy as np
 from PyQt5.QtCore import (Qt, QUrl, QFile, QBuffer, QByteArray, QIODevice, QObject, QThread, QTimer, pyqtSignal, pyqtSlot)# 
 from PyQt5.QtGui import (QIcon, QPixmap, QImage)
-from PyQt5.QtWidgets import (QDialog, QFileDialog, QWidget, QGridLayout, QSizePolicy
-                            ,QSlider, QLabel, QPushButton)
+from PyQt5.QtWidgets import (QDialog, QFileDialog, QWidget, QListWidget, QListWidgetItem
+                            ,QGridLayout, QSizePolicy, QSlider, QLabel, QPushButton)
 from PyQt5.QtMultimedia import (QAudioOutput, QAudioInput, QAudio, QMultimedia, QAudioFormat
-                               ,QAudioDeviceInfo, QAudioProbe)
-#(QAudioRecorder, QMediaPlayer, QAudioEncoderSettings, QAudioFormat, QAudioOutput
-#,QMultimedia, QAudioProbe, QMediaRecorder, QMediaContent, QMediaResource)
+                               ,QAudioDeviceInfo, QAudioProbe, QMediaPlayer, QMediaContent)
 import pyqtgraph as pg
-#import pyaudio
 import wave
-
-# 关闭对话框就注销线程没做到
-# 滑动条定位没解决
-# 音频特征识别没做到
+#import scipy.io.wavfile as scwav
+from python_speech_features import mfcc
+import librosa
+# 没办法scipy.talkbox那个库总是安装失败。。。
+from dtw import dtw
+from numpy.linalg import norm as nlnorm
 
 class Audio:
     def __init__(self, chunksize=512, rate=44100, channel=2, sample_size=8
-                ,codec="audio/pcm", threshold=500):
+                ,codec="audio/pcm", threshold=500, save_dir=None):
         self.chunksize = chunksize
         self.rate = rate
         self.sample_size = sample_size
@@ -45,6 +44,7 @@ class Audio:
         #self.play_duration = 0
         #
         self.threshold = threshold
+        self.save_dir = save_dir
         self.save_path = "test.wav"
         
     def saveWave(self):
@@ -61,6 +61,7 @@ class AudioAnalysis(QDialog):
     #
     def __init__(self, mainwin, dir):
         super().__init__()
+        #self.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint | Qt.CustomizeWindowHint)
         self.main_Win = mainwin
         self.snd_record_ctr = 0 
         self.snd_play_ctr = 0
@@ -70,22 +71,24 @@ class AudioAnalysis(QDialog):
         self.audio = Audio(save_dir=dir)
         self.initAUD()
         self.initIF()
+        self.initWaveList()
 
     def initIF(self):
-        self.layout = QGridLayout()
+        self.layout = QGridLayout(self)
         self.setLayout(self.layout)
         icon = QIcon()
         icon.addPixmap(QPixmap("./style/logo3.png"))
         self.setWindowIcon(icon)
         self.setWindowTitle("语音录制与分析")
-            
+        self.list_LW = QListWidget(self)
+        self.list_LW.setMaximumWidth(160)
         class WaveSpectrum(QWidget):
             def __init__(self, parent=None, maindlg=None):
                 super(WaveSpectrum, self).__init__(parent)
                 self.main_Dlg = maindlg
                 #self.pg_PL = pg.PlotWidget(enableMenu=False)
                 self.audio = self.main_Dlg.audio
-                self.layout = QGridLayout()
+                self.layout = QGridLayout(self)
                 self.setLayout(self.layout)
                 self.pg_PL = pg.PlotWidget() #pg.plot(title="Three plot curves")
                 self.pg_PL.hideButtons()
@@ -122,27 +125,30 @@ class AudioAnalysis(QDialog):
         self.running_SL.setMinimum(0)
         self.running_SL.setMaximum(100)
         self.running_SL.setStyleSheet("QSlider::handle:horizontal {background-color: #d91900;}")
+        self.save_BT = QPushButton(self)
+        self.save_BT.setText("保存与分析")
+        self.save_BT.setMinimumSize(128,32)
         self.record_BT = QPushButton(self)
         self.record_BT.setText("开始录音")
         self.record_BT.setMinimumSize(144,32)
-        self.pause_BT = QPushButton(self)
         self.play_BT = QPushButton(self)
         self.play_BT.setText("开始播放")
         self.play_BT.setMinimumSize(144,32)
         self.reset_BT = QPushButton(self)
         self.reset_BT.setText("停止")
         self.reset_BT.setMinimumSize(128,32)
-        self.save_BT = QPushButton(self)
-        self.save_BT.setText("保存")
-        self.save_BT.setMinimumSize(128,32)
-        self.layout.addWidget(self.wave_spectrum_PG, 0,0, 1,4)
+               
+        self.layout.addWidget(self.list_LW, 0,0,1,1)
+        self.layout.addWidget(self.wave_spectrum_PG, 0,1, 1,3)
         self.layout.addWidget(self.result_LB, 1,0, 1,4)
         self.layout.addWidget(self.running_SL, 2,0, 1,4)
-        self.layout.addWidget(self.record_BT, 3,0, 2,1)
-        self.layout.addWidget(self.play_BT, 3,1, 2,1)
-        self.layout.addWidget(self.reset_BT, 3,2, 2,1)
-        self.layout.addWidget(self.save_BT, 3,3, 2,1)
+        self.layout.addWidget(self.save_BT, 3,0, 2,1)
+        self.layout.addWidget(self.record_BT, 3,1, 2,1)
+        self.layout.addWidget(self.play_BT, 3,2, 2,1)
+        self.layout.addWidget(self.reset_BT, 3,3, 2,1)
+        
 
+        self.list_LW.itemClicked.connect(self.sel2Play)
         self.record_BT.clicked.connect(self.click2Record)
         self.running_SL.sliderReleased.connect(self.dragPosPlay) 
         # 注意这里得是用户主动的动作哟 另外如果需要点击位置定位的话还必须要重写mousePressEvent，这里就不弄了
@@ -150,6 +156,17 @@ class AudioAnalysis(QDialog):
         self.reset_BT.clicked.connect(self.click2Reset)
         self.save_BT.clicked.connect(self.click2Save)
     
+    def initWaveList(self):
+        self.wave_dict = {"小黄":["catH1.wav",0],"小黄骚":["catH2.wav",0], "小黄又骚":["catH3.wav",0], "小黄又又骚":["catH4.wav",0]
+                         ,"煤球":["catM1.wav",0],"煤球骚":["catM2.wav",0], "煤球又骚":["catM3.wav",0]
+                         ,"老公":["laog.wav",0], "老婆":["laop.wav",0]}
+        
+        for k in self.wave_dict:
+            item = QListWidgetItem()
+            item.setText(k)
+            item.setData(Qt.UserRole, self.wave_dict[k])
+            self.list_LW.addItem(item)
+            
     def initAUD(self):
         #
         info = QAudioDeviceInfo.defaultInputDevice()
@@ -284,6 +301,22 @@ class AudioAnalysis(QDialog):
             self.snd_play_ctr = 1
             self.play_BT.setText("暂停播放")
     
+    def sel2Play(self, item):
+        c0 = (self.is_snd_recording == None)
+        c1 = ((self.is_snd_recording == False) & (self.snd_play_ctr % 2 == 0))
+        c2 = ((self.is_snd_recording == True) & (self.snd_record_ctr % 2 == 0))
+        if (c0 | c1 | c2):
+            self.cur_item = item
+            #self.cur_wave = os.path.abspath(item.data(Qt.UserRole)[0])
+            self.cur_wave = item.data(Qt.UserRole)[0]
+            with wave.open(self.cur_wave, 'rb') as wf:
+                data = wf.readframes(wf.getnframes())
+                self.audio.play_buffer.setData(data)
+                self.audio.play_buffer.open(QIODevice.ReadOnly)
+                self.start_time = 0
+                self.audio.duration = 10 # 随便给了个值，避免产生除0的问题其他没啥用
+                self.audioPlayer_TD.start()           
+    
     def click2Reset(self):
         if self.is_snd_recording == None:
             self.result_LB.setText("还没录音呢！！！")
@@ -312,9 +345,9 @@ class AudioAnalysis(QDialog):
         # 注意末尾那个[0]别丢了，不然返回的是tuple类型
         self.audio.saveWave()
         self.snd_record_ctr = 0
-        self.result_LB.setText("录音存于："+os.path.abspath(self.audio.save_path))
+        self.result_LB.setText("录音存于：{}；刚刚应该是{}叫了:)".format(os.path.abspath(self.audio.save_path), self.getMinDist()))
         self.record_BT.setText("开始录音")
-            
+         
     def processAudioData(self):
         if self.is_snd_recording: #self.audioRecorder.state() == QAudio.ActiveState:
             self.audio.block = self.audio.record_buffer.data().right(self.audio.chunksize)
@@ -333,6 +366,32 @@ class AudioAnalysis(QDialog):
             self.result_LB.setText(show_info)
         self.wave_spectrum_PG.updatePlot()
 
-    
+    def getMFCC(self,path):
+        (rate, sig) = scwav.read(path)
+        mfcc_feature = mfcc(sig, rate)
+        #print(mfcc_feature)
+        nmfcc = np.array(mfcc_feature)
+        #print(nmfcc)
+        # return nmfcc
+        y, sr = librosa.load(path)
+        return librosa.feature.mfcc(y, sr)
+        
+    def compareMFCC(self, demo_path):
+        mfcc1 = self.getMFCC(self.audio.save_path)
+        mfcc2 = self.getMFCC(demo_path)
+        norm = lambda x, y: nlnorm(x-y, ord=1)
+        d, cost_matrix, acc_cost_matrix, path = dtw(mfcc1.T, mfcc2.T, dist=norm)
+        #print(d)
+        return d
+       
+    def getMinDist(self):
+        i = 1000000
+        for k in self.wave_dict:
+            self.wave_dict[k][1] = self.compareMFCC(self.wave_dict[k][0])
+            print("{}：{:.1f}".format(k, self.wave_dict[k][1]))
+            i = min(i, self.wave_dict[k][1])
+            if i == self.wave_dict[k][1]:
+                min_k = k
+        return min_k
     
   

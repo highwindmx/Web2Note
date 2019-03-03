@@ -1,7 +1,12 @@
-lxml==4.3.1
+numpy==1.16.2
+lxml==4.3.2
+pyqtgraph==0.10.0
 jieba==0.39
-wordcloud==1.5.0
+python_speech_features==0.6
+librosa==0.6.3
+dtw==1.3.3
 pandas==0.24.1
 Send2Trash==1.5.0
+wordcloud==1.5.0
 PyQt5==5.12
 beautifulsoup4==4.7.1
