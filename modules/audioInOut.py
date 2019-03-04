@@ -1,5 +1,4 @@
 import os
-import numpy as np
 from PyQt5.QtCore import (Qt, QUrl, QFile, QBuffer, QByteArray, QIODevice, QObject, QThread, QTimer, pyqtSignal, pyqtSlot)# 
 from PyQt5.QtGui import (QIcon, QPixmap, QImage)
 from PyQt5.QtWidgets import (QDialog, QFileDialog, QWidget, QListWidget, QListWidgetItem
@@ -8,11 +7,12 @@ from PyQt5.QtMultimedia import (QAudioOutput, QAudioInput, QAudio, QMultimedia, 
                                ,QAudioDeviceInfo, QAudioProbe, QMediaPlayer, QMediaContent)
 import pyqtgraph as pg
 import wave
+import librosa
 import scipy.io.wavfile as scwav
 from python_speech_features import mfcc
-import librosa
 # 没办法scipy.talkbox那个库总是安装失败。。。
 from dtw import dtw
+import numpy as np
 from numpy.linalg import norm as nlnorm
 
 class Audio:
@@ -37,13 +37,9 @@ class Audio:
         self.play_buffer = QBuffer()  
         # 不能用QIODevice()，因为这是个c++的虚类(还没有python实体化？), 
         # 顺便也就不用所谓的QAudioBuffer类了
-        #
         self.pos = 0
         self.duration = 0
-        #self.play_block_ctr = 0
-        #self.play_duration = 0
-        #
-        self.threshold = threshold
+        # self.threshold = threshold
         self.save_dir = save_dir
         self.save_path = "./sound/test.wav"
         
@@ -56,12 +52,8 @@ class Audio:
     
                
 class AudioAnalysis(QDialog):
-    #recordFinished = pyqtSignal()
-    #playFinished = pyqtSignal()
-    #
     def __init__(self, mainwin, dir):
         super().__init__()
-        #self.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint | Qt.CustomizeWindowHint)
         self.main_Win = mainwin
         self.snd_record_ctr = 0 
         self.snd_play_ctr = 0
@@ -183,7 +175,8 @@ class AudioAnalysis(QDialog):
         self.audioRecorder.moveToThread(self.audioRecorder_TD)
         self.audioRecorder_TD.started.connect(self.startRecord)
         self.audioRecorder.stateChanged.connect(self.recordStopped)
-        #
+        # 总结来说线程只是一个容器，里面执行的循环要是没法结束，强制退出也不好操作
+        # 所以还是好好写好任务流然后发送信号比较合理
         self.audioPlayer = QAudioOutput(self.audio.format)
         self.audioPlayer.setNotifyInterval(update_interval)
         self.audioPlayer.notify.connect(self.processAudioData)
@@ -371,10 +364,7 @@ class AudioAnalysis(QDialog):
     def getMFCC(self,path):
         (rate, sig) = scwav.read(path)
         mfcc_feature = mfcc(sig, rate)
-        #print(mfcc_feature)
         nmfcc = np.array(mfcc_feature)
-        #print(nmfcc)
-        # return nmfcc
         y, sr = librosa.load(path)
         return librosa.feature.mfcc(y, sr)
         
@@ -384,7 +374,6 @@ class AudioAnalysis(QDialog):
         mfcc2 = self.getMFCC(demo_path)
         norm = lambda x, y: nlnorm(x-y, ord=1)
         d, cost_matrix, acc_cost_matrix, path = dtw(mfcc1.T, mfcc2.T, dist=norm)
-        #print(d)
         return d
        
     def getMinDist(self):
