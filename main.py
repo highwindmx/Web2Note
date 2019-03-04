@@ -8,7 +8,7 @@ def main(argv):
     imt_Dlg = ImportDirs()
     if (not imt_Dlg.exec_()):
         # sys.exit(0)
-        dl = imt_Dlg.initDirlist
+        dl = imt_Dlg.dir_list
         
         win = MainWindow(dl)
         win.show()
