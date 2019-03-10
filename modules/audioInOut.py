@@ -84,8 +84,7 @@ class AudioAnalysis(QDialog):
                 self.setLayout(self.layout)
                 self.pg_PL = pg.PlotWidget() #pg.plot(title="Three plot curves")
                 self.pg_PL.hideButtons()
-                self.layout.addWidget(self.pg_PL)
-                
+                self.layout.addWidget(self.pg_PL)               
                 self.item = self.pg_PL.getPlotItem()
                 self.item.hideButtons()
                 self.item.setMouseEnabled(y=False)

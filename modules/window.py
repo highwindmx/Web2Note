@@ -5,7 +5,7 @@ from datetime import datetime
 import pathlib
 import pandas as pd
 
-from PyQt5.QtCore import (pyqtSignal, Qt, QUrl, QSize, QPoint, QThread, QEventLoop, QFileInfo, QRect, QDate)
+from PyQt5.QtCore import (pyqtSignal, Qt, QUrl, QSize, QPoint, QThread, QEventLoop, QFileInfo, QRect, QDate)#, QObject)
 from PyQt5.QtGui import (QIcon, QPixmap, QCursor, QColor, QDesktopServices, QStandardItemModel) # QPainter,
 from PyQt5.QtWidgets import (qApp, QMainWindow, QWidget
                             ,QListWidget, QListWidgetItem, QTabWidget, QCalendarWidget
@@ -969,11 +969,7 @@ class MainWindow(QMainWindow):
         self.onHtmlGot.emit()
 
     def selectNote(self, item):
-        qw_dict = {0:self.note_List_Tab_Draft_QW
-                  ,1:self.note_List_Tab_Archive_QW
-                  ,2:self.note_List_Tab_Trash_QW
-                  }
-        self.sel_list_QW = qw_dict[self.note_List_Tab_QW.currentIndex()]
+        self.sel_list_QW = self.note_List_Tab_QW.widget(self.note_List_Tab_QW.currentIndex())
         self.sel_item = item
         self.sel_note = self.sel_item.data(Qt.UserRole)
  
@@ -1036,15 +1032,26 @@ class MainWindow(QMainWindow):
         self.refresAllLists()
         self.note_Keyword_CB.refreshList()
         self.note_Calendar_QW.genCell(self.note_index.getAllDate())
-
-    def sortNote(self, flag):
+     
+    def sortNote(self, flag): 
+        self.note_Sort_Progress_PD = QProgressDialog()
+        self.note_Sort_Progress_PD.setWindowTitle("笔记们正在排序中")
+        #self.note_Sort_Progress_PD.setModal(True)
+        #self.note_Sort_Progress_PD.setMinimumDuration(0)
+        self.note_Sort_Progress_PD.setMinimumWidth(320)
+        #self.note_Sort_Progress_PD.setAutoClose(True)
+        self.note_Sort_Progress_PD.setRange(0,0) #按理说应该显示来回的busy状态
+        #但是不知道为啥直接就未响应了。。。应该是得挪到其他线程完成会比较好
+        self.note_Sort_Progress_PD.setCancelButton(None)
+        self.note_Sort_Progress_PD.show()
         self.statusBar().showMessage("排序中...")
         table = pd.DataFrame()
         npid = []
+        #self.note_Sort_Progress_PD.show()
         for index in range(self.note_List_Tab_QW.currentWidget().count()):
             np = self.note_List_Tab_QW.currentWidget().item(index).data(Qt.UserRole)
             npid.append(np.id)
-            table = self.note_index.data.loc[npid]
+        table = self.note_index.data.loc[npid]
         if flag == "time0":
             table.sort_values(by="mtime", ascending=True, inplace=True)
         elif flag == "time1":
@@ -1056,10 +1063,11 @@ class MainWindow(QMainWindow):
         elif flag == "Exten":
             table.sort_values(by="ext", inplace=True)
         else:
-            pass
+            pass       
         self.refreshOneList(self.note_List_Tab_QW.currentIndex(), table)
         self.statusBar().showMessage("排序完成")
-        
+        self.note_Sort_Progress_PD.hide() 
+
     def refreshOneList(self, key, table):
         self.note_List_Tab_QW.widget(key).clear()
         for index, row in table.iterrows():
