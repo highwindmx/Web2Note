@@ -830,10 +830,29 @@ class MainWindow(QMainWindow):
         self.note_Browser_QW.page().runJavaScript("document.execCommand('InsertnorderedList', false);")           
 
     def noteItemClicked(self, item):
+        self.ifSaved()
+        self.cur_item = item 
+        self.cur_note = item.data(Qt.UserRole) # 这个Qt.UserRole 还真是神奇 -_-||
+        self.loadNote()
+
+    def ifSaved(self):
         if self.first_item:
             pass
         else:
-            self.ifSaved()
+            if os.path.exists(self.cur_note.path): #比较特殊的情况判断，以防出错
+                if_t = (self.cur_note.title == self.note_Title_LE.text())
+                if_k = (self.cur_note.keywords == self.note_Keyword_LE.text().lstrip("关键词："))
+                # if os.path.splitext(self.cur_note.content)[1] == ".html":
+                #     prv_note_html = self.cur_note_html
+                #     self.getHTMLContent() #
+                #     if_c = (prv_note_html == self.cur_note_html)
+                # else:
+                #     if_c = True
+                # print(self.cur_note_html)
+                if_a = (set(self.cur_note.att_list) == set(os.listdir(self.cur_note.att_dir)))
+                self.saveFlag=(if_t & if_k & if_a) # 如果有一个假就说明发生改变 if_c & 
+            else:
+                self.statusBar().showMessage("读取笔记{}有问题呢".format(self.cur_note.path))
             if not self.saveFlag:
                 note_save_cfm = QMessageBox.question(self, "注意", "之前的文件可能有变动未保存！！!\n是否保存更改？"
                                                     ,QMessageBox.Ok|QMessageBox.Cancel, QMessageBox.Ok)
@@ -843,22 +862,6 @@ class MainWindow(QMainWindow):
                     pass
             else:
                 pass
-        self.cur_item = item 
-        self.cur_note = item.data(Qt.UserRole) # 这个Qt.UserRole 还真是神奇 -_-||
-        self.loadNote()
-
-    def ifSaved(self):
-        if_t = (self.cur_note.title == self.note_Title_LE.text())
-        if_k = (self.cur_note.keywords == self.note_Keyword_LE.text().lstrip("关键词："))
-        # if os.path.splitext(self.cur_note.content)[1] == ".html":
-        #     prv_note_html = self.cur_note_html
-        #     self.getHTMLContent() #
-        #     if_c = (prv_note_html == self.cur_note_html)
-        # else:
-        #     if_c = True
-        # print(self.cur_note_html)
-        if_a = (set(self.cur_note.att_list) == set(os.listdir(self.cur_note.att_dir)))
-        self.saveFlag=(if_t & if_k & if_a) # 如果有一个假就说明发生改变 if_c & 
      
     def loadNote(self):
         self.note_Keyword_CB.refreshList()
@@ -974,6 +977,7 @@ class MainWindow(QMainWindow):
         self.sel_note = self.sel_item.data(Qt.UserRole)
  
     def archiveNote(self):
+        self.ifSaved()
         self.sel_note.type = "Archive"
         self.sel_note.move(dest=self.sel_note.type)
         self.sel_item.setData(Qt.UserRole, self.sel_note)
@@ -982,6 +986,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage('我存档啦') 
 
     def trashNote(self):
+        self.ifSaved()
         self.sel_note.type = "Trash"
         self.sel_note.move(dest=self.sel_note.type)
         self.sel_item.setData(Qt.UserRole, self.sel_note)
